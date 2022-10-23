@@ -8,7 +8,7 @@ typedef struct {
 } keydict;
 
 const keydict zeos[] {
-  //Alphabet
+  //Letters
   {1080, 'a'},
   {1124, 'b'},
   {1602, 'c'},
@@ -35,17 +35,49 @@ const keydict zeos[] {
   {1604, 'x'},
   {1642, 'y'},
   {1076, 'z'},
+
+  //Numbers
+  {1068, '1'},
+  {1596, '2'},
+  {1100, '3'},
+  {1098, '4'},
+  {1628, '5'},
+  {1644, '6'},
+  {1146, '7'},
+  {1148, '8'},
+  {1164, '9'},
+  {1162, '0'},
+
+  //Characters
+  {1052, '`'},
+  {1692, '-'},
+  {1706, '='},
+  {1210, '\\'},
+  {1192, '['},
+  {1206, ']'},
+  {1176, ';'},
+  {1188, '\''},
+  {1666, ','},
+  {1170, '.'},
+  {1172, '/'},
+
+
   //Modifiers
   {1572, KEY_LEFT_SHIFT},
   {1576, KEY_LEFT_CTRL},
   {1570, KEY_LEFT_ALT},
+  {1714, KEY_RIGHT_SHIFT},
   //{1472, KEY_RIGHT_ALT}, //This key has weird behavior, ignoring for now
   //It appears that 1472 tells the computer that the alt or ctrl on the right side is being pressed vs the left side
   //We should be able to just ignore 1472. Will code in logic for this later
-  {1714, KEY_RIGHT_SHIFT},
+
   //Special keys
+  {1050, KEY_TAB},
+  {1200, KEY_CAPS_LOCK},
+  {1740, KEY_BACKSPACE},
   {1106, ' '},
   {1716, KEY_RETURN} //Enter key
+
 };
 
 word keyin;
