@@ -8,6 +8,7 @@ typedef struct {
 } keydict;
 
 const keydict zeos[] {
+  //Alphabet
   {1080, 'a'},
   {1124, 'b'},
   {1602, 'c'},
@@ -34,8 +35,16 @@ const keydict zeos[] {
   {1604, 'x'},
   {1642, 'y'},
   {1076, 'z'},
-  {1106, ' '},
+  //Modifiers
   {1572, KEY_LEFT_SHIFT},
+  {1576, KEY_LEFT_CTRL},
+  {1570, KEY_LEFT_ALT},
+  //{1472, KEY_RIGHT_ALT}, //This key has weird behavior, ignoring for now
+  //It appears that 1472 tells the computer that the alt or ctrl on the right side is being pressed vs the left side
+  //We should be able to just ignore 1472. Will code in logic for this later
+  {1714, KEY_RIGHT_SHIFT},
+  //Special keys
+  {1106, ' '},
   {1716, KEY_RETURN} //Enter key
 };
 
