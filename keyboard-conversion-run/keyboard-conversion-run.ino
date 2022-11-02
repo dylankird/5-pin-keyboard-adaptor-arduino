@@ -7,7 +7,7 @@ typedef struct {
   word keychar;
 } keydict;
 
-const keydict zeos[] {
+const keydict normal[] {
   //Letters
   {1080, 'a'},
   {1124, 'b'},
@@ -61,15 +61,48 @@ const keydict zeos[] {
   {1170, '.'},
   {1172, '/'},
 
+  //Function keys
+  {1260, KEY_ESC},
+  {1546, KEY_F1},
+  {1548, KEY_F2},
+  {1032, KEY_F3},
+  {1560, KEY_F4},
+  {1542, KEY_F5},
+  {1046, KEY_F6},
+  {1286, KEY_F7},
+  {1556, KEY_F8},
+  {1026, KEY_F9},
+  {1554, KEY_F10},
+  {1776, KEY_F11},
+  {1038, KEY_F12},
 
   //Modifiers
   {1572, KEY_LEFT_SHIFT},
   {1576, KEY_LEFT_CTRL},
   {1570, KEY_LEFT_ALT},
   {1714, KEY_RIGHT_SHIFT},
-  //{1472, KEY_RIGHT_ALT}, //This key has weird behavior, ignoring for now
-  //It appears that 1472 tells the computer that the alt or ctrl on the right side is being pressed vs the left side
-  //We should be able to just ignore 1472. Will code in logic for this later
+
+  {1788, KEY_SCROLL_LOCK},
+
+  {1774, KEY_NUM_LOCK},
+
+  {1272, KEYPAD_ASTERIX},
+  {1782, KEYPAD_MINUS},
+  {1266, KEYPAD_PLUS},
+  {1746, KEYPAD_1},
+  {1764, KEYPAD_2},
+  {1268, KEYPAD_3},
+  {1238, KEYPAD_4},
+  {1254, KEYPAD_5},
+  {1768, KEYPAD_6},
+  {1752, KEYPAD_7},
+  {1258, KEYPAD_8},
+  {1786, KEYPAD_9},  //KEY_KP_9
+  {1248, KEYPAD_0},
+  {1762, KEYPAD_PERIOD},
+
+
+
 
   //Special keys
   {1050, KEY_TAB},
@@ -80,9 +113,36 @@ const keydict zeos[] {
 
 };
 
+const keydict modified[] {
+
+  {1576, KEY_RIGHT_CTRL},
+  {1570, KEY_LEFT_GUI}, //This is actually the key right alt, but I have remapped it to meta
+
+  {1172, KEYPAD_SLASH},
+
+  {1716, KEYPAD_ENTER},
+
+  {1272, KEY_PRINTSCREEN},
+  {1248, KEY_INSERT},
+  {1762, KEY_DELETE},
+  {1752, KEY_HOME},
+  {1746, KEY_END},
+  {1786, KEY_PAGE_UP},
+  {1268, KEY_PAGE_DOWN},
+  {1258, KEY_UP_ARROW},
+  {1764, KEY_DOWN_ARROW},
+  {1238, KEY_LEFT_ARROW},
+  {1768, KEY_RIGHT_ARROW}
+
+};
+
+
 word keyin;
 
 bool releasekey= false;
+bool modifiercode = false;
+
+bool pausekey = false;
 
 int keyarraysize;
 
@@ -95,7 +155,8 @@ void setup() {
 delay(500);
 Keyboard.begin();
 
-keyarraysize = sizeof(zeos) / (sizeof(word)*2);
+keyarraysize = sizeof(normal) / (sizeof(word)*2);
+
 //Serial.begin(9600);
 }
 
@@ -109,16 +170,34 @@ void loop() {
     {
       releasekey = true;
     }
+    else if(keyin == 1472)
+    {
+      modifiercode = true;
+    }
+    else if(keyin == 1986)
+    {
+      if(!pausekey)
+      {
+        Keyboard.write(KEY_PAUSE); //For some reason this presses H. I have no idea why
+        pausekey = true;
+      }
+      else pausekey = false;
+    }
     else if(keyin != 2016 && releasekey == false)
     {
-      Keyboard.press(findchar(keyin));  
+      Keyboard.press(findchar(keyin,modifiercode));  
+      modifiercode = false;
     }
     else
     {
-      Keyboard.release(findchar(keyin));
+      Keyboard.release(findchar(keyin,modifiercode));
       releasekey=false;
+      modifiercode = false;
     }
     digitalWrite(13, LOW);
+    //Serial.print(keyin);
+    //Serial.print('\t');
+    //Serial.println(printparse(keyin, modifiercode));
   }
 }
 
@@ -141,13 +220,52 @@ word read_keyboard()
   return data_in;
 }  
 
-word findchar(word inputval)
+word findchar(word inputval, bool modifier)
 {
-  for(int i=0; i<keyarraysize; i++)
+  if(!modifier)
   {
-    if(zeos[i].keycode == inputval)
+    for(int i=0; i<keyarraysize; i++)
     {
-      return zeos[i].keychar;
+      if(normal[i].keycode == inputval)
+      {
+        return normal[i].keychar;
+      }
+    }
+  }
+  else
+  {
+    for(int i=0; i<keyarraysize; i++)
+    {
+      if(modified[i].keycode == inputval)
+      {
+        return modified[i].keychar;
+      }
+    }
+  }
+
+  return 0;
+}
+
+String printparse(word inputval, bool modifier)
+{
+  word outputchar = findchar(inputval, modifier);
+  if(outputchar)
+  {
+    return String(char(outputchar));
+  }
+  else
+  {
+    switch (inputval)
+    {
+      case 2016:
+        return "release";
+        break;
+      case 1472:
+        return "modifier";
+        break;
+      default:
+        return "UNKNOWN";
+        break;
     }
   }
 }
