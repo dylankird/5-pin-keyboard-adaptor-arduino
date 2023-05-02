@@ -1,4 +1,4 @@
-#include <Keyboard.h>
+#include <Keyboard.h> //Include the keyboard emulation library for the teensy
 
 //Pin 2 is clock, pin 3 is data
 
@@ -7,6 +7,7 @@ typedef struct {
   word keychar;
 } keydict;
 
+//The dictionary for normal keys
 const keydict normal[] {
   //Letters
   {1080, 'a'},
@@ -81,11 +82,10 @@ const keydict normal[] {
   {1576, KEY_LEFT_CTRL},
   {1570, KEY_LEFT_ALT},
   {1714, KEY_RIGHT_SHIFT},
-
   {1788, KEY_SCROLL_LOCK},
-
   {1774, KEY_NUM_LOCK},
-
+  
+  //Keypad
   {1272, KEYPAD_ASTERIX},
   {1782, KEYPAD_MINUS},
   {1266, KEYPAD_PLUS},
@@ -101,9 +101,6 @@ const keydict normal[] {
   {1248, KEYPAD_0},
   {1762, KEYPAD_PERIOD},
 
-
-
-
   //Special keys
   {1050, KEY_TAB},
   {1200, KEY_CAPS_LOCK},
@@ -113,6 +110,7 @@ const keydict normal[] {
 
 };
 
+//This is the dictionary for keys with the 1472 code
 const keydict modified[] {
 
   {1576, KEY_RIGHT_CTRL},
@@ -137,104 +135,106 @@ const keydict modified[] {
 };
 
 
-word keyin;
+word keyin;   //The data recieved from the keyboard
 
-bool releasekey= false;
-bool modifiercode = false;
+bool releasekey= false;     //the boolean value that turns true when the code for releasing a key is detected
+bool modifiercode = false;  //the boolean value that turns true when the modifier code is detected
 
 bool pausekey = false;
 
 int keyarraysize;
+int modkeyarraysize;
 
 void setup() {
-  pinMode(2, INPUT);
-  pinMode(3, INPUT);
+  pinMode(2, INPUT);    //Clock pin
+  pinMode(3, INPUT);    //Data pin
 
-  pinMode(13, OUTPUT);
+  pinMode(13, OUTPUT);  //Status LED
 
-delay(500);
-Keyboard.begin();
+delay(500);       //Wait half a second to give time to program the arduino before sketch runs
+Keyboard.begin(); //Start the keyboard output of the arduino
 
 keyarraysize = sizeof(normal) / (sizeof(word)*2);
+modkeyarraysize = sizeof(modified) / (sizeof(word)*2);
 
-//Serial.begin(9600);
+//Serial.begin(9600); //Open serial port for debugging
 }
 
 void loop() {
-
-  if(digitalRead(2) == LOW)
+  if(digitalRead(2) == LOW)     //The clock pin going low means a key has been pressed
   {
-    digitalWrite(13, HIGH);
-    keyin = read_keyboard();
-    if(keyin == 2016)
+    digitalWrite(13, HIGH);     //Turn on status LED so we can see that data is transferring
+    keyin = read_keyboard();    //Read the 
+    if(keyin == 2016)           //This keycode means the following keycode has been released
     {
-      releasekey = true;
+      releasekey = true;        //set the releasekey boolean to true to indicate that the next keycode will be released
     }
-    else if(keyin == 1472)
+    else if(keyin == 1472)      //This is the modifier code, which means the key will be looked up in the secondary dictionary
     {
-      modifiercode = true;
+      modifiercode = true;      //Set the modifiercode bool to true so we look up the key in the secondary dictionary
     }
-    else if(keyin == 1986)
-    {
+    else if(keyin == 1986)      //Unfinished code to handle the PAUSE key
+    {                           //The PAUSE key sends a bunch of weird keycodes 
       if(!pausekey)
       {
-        Keyboard.write(KEY_PAUSE); //For some reason this presses H. I have no idea why
+        Keyboard.write(KEY_PAUSE); 
         pausekey = true;
       }
       else pausekey = false;
     }
-    else if(keyin != 2016 && releasekey == false)
+    else if(releasekey == false)  //If the releasekey bool is false and keyin is not one of the previous codes, we have a keycode for a key that has been pressed
     {
-      Keyboard.press(findchar(keyin,modifiercode));  
-      modifiercode = false;
+      Keyboard.press(findchar(keyin,modifiercode));   //Find the character based on the keycode and press it down on the computer
+      modifiercode = false;                           //reset the modifiercode bool since the modified key has been selected
     }
-    else
+    else    //If the releasekey bool is true and it's not one of the previous codes, we have a keycode for a key that has been released
     {
-      Keyboard.release(findchar(keyin,modifiercode));
-      releasekey=false;
-      modifiercode = false;
+      Keyboard.release(findchar(keyin,modifiercode)); //Find the character based on the keycode and release it
+      releasekey=false;                               //reset the releasekey bool since the key has been released on the computer
+      modifiercode = false;                           //reset the modifiercode bool since the modified key has been selected
     }
-    digitalWrite(13, LOW);
+    digitalWrite(13, LOW);  //Turn off the status LED, as the data has been read
+    //For debugging:
     //Serial.print(keyin);
     //Serial.print('\t');
-    //Serial.println(printparse(keyin, modifiercode));
+    //Serial.println(printparse(keyin, modifiercode)); //Prints the code from the keyboard and its corresponding character
   }
 }
 
-word read_keyboard()
+word read_keyboard()  //Reads in a word from the keyboard
 {
-  word data_in = 0;
-  for(int i=0; i<12; i++)
+  word data_in = 0;   //Start with an empty word
+  for(int i=0; i<12; i++) //Loop 12 times since there are 12 clock pulses
   {
-    while(digitalRead(2) == HIGH);
-    if(digitalRead(3) == HIGH)
+    while(digitalRead(2) == HIGH);  //wait until clock pin goes low
+    if(digitalRead(3) == HIGH)      //If the data pin is high, set bit i of the word
     {
       bitSet(data_in, i);
     }
-    else
+    else                            //If the data pin is low, clear bit i
     {
       bitClear(data_in, i);
     }
-    while(digitalRead(2) == LOW);
+    while(digitalRead(2) == LOW);   //Wait until the clock goes high again before looping back
   }  
-  return data_in;
+  return data_in;   //When done, return the word recieved 
 }  
 
-word findchar(word inputval, bool modifier)
+word findchar(word inputval, bool modifier) //Find the character from the dictionary based on the number from the keyboard
 {
-  if(!modifier)
+  if(!modifier)   //If there is no modifier code, get the character from the regular dictionary
   {
-    for(int i=0; i<keyarraysize; i++)
+    for(int i=0; i<keyarraysize; i++) //Iterate through the dictionary until the keycode is found
     {
-      if(normal[i].keycode == inputval)
+      if(normal[i].keycode == inputval) //If the keycode matches the code from the keyboard, we found it
       {
-        return normal[i].keychar;
+        return normal[i].keychar;       //Return the character found
       }
     }
   }
-  else
+  else  //If the modifier code is present, look it up in the other dictionary
   {
-    for(int i=0; i<keyarraysize; i++)
+    for(int i=0; i<modkeyarraysize; i++)   //Same as before, but with the modifier dictionary
     {
       if(modified[i].keycode == inputval)
       {
@@ -243,7 +243,7 @@ word findchar(word inputval, bool modifier)
     }
   }
 
-  return 0;
+  return 0; //If the keycode was not found, return 0.
 }
 
 String printparse(word inputval, bool modifier)
